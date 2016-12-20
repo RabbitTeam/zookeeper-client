@@ -3,7 +3,7 @@
 
   "dependencies": {
     "NETStandard.Library": "1.6.0",
-    "ZooKeeperNetEx": "3.4.8.5"
+    "ZooKeeperNetEx": "3.4.9.2"
   },
 
   "frameworks": {
