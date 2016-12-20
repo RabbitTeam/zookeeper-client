@@ -1,11 +1,26 @@
 ﻿{
   "version": "1.0.0-*",
+  "description": "支持断线重连，永久watcher，递归删除，递归创建等常用操作的，ZooKeeper客户端。",
+  "copyright": "©RabbitHub. All rights reserved.",
+  "authors": [ "majian" ],
+  "title": "Apache ZooKeeper .NET async Client Extensions",
+  "projectUrl": "https://github.com/RabbitTeam/zookeeper-client",
+
+  "packOptions": {
+    "tags": [ "RabbitHub", "Rabbit", "Zookeeper", "ZKClient", "ZookeeperClient" ],
+    "owners": [ "RabbitHub" ],
+    "iconUrl": "http://images.cnblogs.com/cnblogs_com/ants/862383/o_icon.png",
+    "licenseUrl": "https://github.com/RabbitTeam/zookeeper-client/blob/master/LICENSE",
+    "repository": {
+      "type": "git",
+      "url": "https://github.com/RabbitTeam/zookeeper-client"
+    }
+  },
 
   "dependencies": {
     "NETStandard.Library": "1.6.0",
     "ZooKeeperNetEx": "3.4.9.2"
   },
-
   "frameworks": {
     "netstandard1.6": {
       "imports": "dnxcore50"
@@ -24,5 +39,8 @@
         ]
       }
     }
+  },
+  "buildOptions": {
+    "xmlDoc": true
   }
 }
