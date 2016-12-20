@@ -1,6 +1,6 @@
 ## Rabbit ZooKeeper Extensions
 
-该项目使用了 [Apache ZooKeeper .NET async Client](https://www.nuget.org/packages/ZooKeeperNetEx/) 组件，除提供了基本的zk操作还额外封装了常用的功能以更方便.net开发者更好的使用zookeeper。
+该项目使用了 [Apache ZooKeeper .NET async Client](https://www.nuget.org/packages/ZooKeeperNetEx/) 组件，除提供了基本的zk操作，还额外封装了常用的功能以便让.net开发者更好的使用zookeeper。
 ## 提供的功能
 
 1. session过期重连
