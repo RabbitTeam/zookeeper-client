@@ -1,37 +1,66 @@
-## Welcome to GitHub Pages
+## Rabbit ZooKeeper Extensions
 
-You can use the [editor on GitHub](https://github.com/RabbitTeam/zookeeper-client/edit/master/README.md) to maintain and preview the content for your website in Markdown files.
+该项目使用了 [Apache ZooKeeper .NET async Client](https://www.nuget.org/packages/ZooKeeperNetEx/) 组件，除提供了基本的zk操作还额外封装了常用的功能以更方便.net开发者更好的使用zookeeper。
+## 提供的功能
 
-Whenever you commit to this repository, GitHub Pages will run [Jekyll](https://jekyllrb.com/) to rebuild the pages in your site, from the content in your Markdown files.
+1. session过期重连
+2. 永久watcher
+3. 递归删除节点
+4. 递归创建节点
+5. 跨平台（支持.net core）
 
-### Markdown
+## 使用说明
+### 创建连接
 
-Markdown is a lightweight and easy-to-use syntax for styling your writing. It includes conventions for
+    var client = new ZookeeperClient(new ZookeeperClientOptions
+            {
+                ConnectionString = "172.18.20.132:2181",
+                BasePath = "/", //default value
+                ConnectionTimeout = TimeSpan.FromSeconds(10), //default value
+                SessionTimeout = TimeSpan.FromSeconds(20), //default value
+                OperatingTimeout = TimeSpan.FromSeconds(60), //default value
+                ReadOnly = false, //default value
+                SessionId = 0, //default value
+                SessionPasswd = null //default value
+            });
+### 创建节点
+    await client.CreateEphemeralAsync("/year", Encoding.UTF8.GetBytes("2016"));
+    await client.CreateEphemeralAsync("/year", Encoding.UTF8.GetBytes("2016"), ZooDefs.Ids.OPEN_ACL_UNSAFE);
 
-```markdown
-Syntax highlighted code block
+    await client.CreatePersistentAsync("/year", Encoding.UTF8.GetBytes("2016"));
+    await client.CreatePersistentAsync("/year", Encoding.UTF8.GetBytes("2016"), ZooDefs.Ids.OPEN_ACL_UNSAFE);
 
-# Header 1
-## Header 2
-### Header 3
+    await client.CreateAsync("/year", Encoding.UTF8.GetBytes("2016"), ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT_SEQUENTIAL);
+    
+    //递归创建
+    await client.CreateRecursiveAsync("/microsoft/netcore/aspnet", Encoding.UTF8.GetBytes("1.0.0"), CreateMode.PERSISTENT);
+### 获取节点数据
+    var data = await client.GetDataAsync("/year");
+    Encoding.UTF8.GetString(data.ToArray());
+### 获取子节点
+    IEnumerable<string> children= await client.GetChildrenAsync("/microsoft");
+### 判断节点是否存在
+    bool exists = await client.ExistsAsync("/year");
+### 删除节点
+    await client.DeleteAsync("/year");
 
-- Bulleted
-- List
-
-1. Numbered
-2. List
-
-**Bold** and _Italic_ and `Code` text
-
-[Link](url) and ![Image](src)
-```
-
-For more details see [GitHub Flavored Markdown](https://guides.github.com/features/mastering-markdown/).
-
-### Jekyll Themes
-
-Your Pages site will use the layout and styles from the Jekyll theme you have selected in your [repository settings](https://github.com/RabbitTeam/zookeeper-client/settings). The name of this theme is saved in the Jekyll `_config.yml` configuration file.
-
-### Support or Contact
-
-Having trouble with Pages? Check out our [documentation](https://help.github.com/categories/github-pages-basics/) or [contact support](https://github.com/contact) and we’ll help you sort it out.
+    //递归删除
+    bool success = await client.DeleteRecursiveAsync("/microsoft");
+### 更新数据
+    Stat stat = await client.SetDataAsync("/year", Encoding.UTF8.GetBytes("2017"));
+### 订阅数据变化
+    await client.SubscribeDataChange("/year", (ct, args) =>
+    {
+        IEnumerable<byte> currentData = args.CurrentData;
+        string path = args.Path;
+        Watcher.Event.EventType eventType = args.Type;
+        return Task.CompletedTask;
+    });
+### 订阅子节点变化
+    await client.SubscribeChildrenChange("/microsoft", (ct, args) =>
+    {
+        IEnumerable<string> currentChildrens = args.CurrentChildrens;
+        string path = args.Path;
+        Watcher.Event.EventType eventType = args.Type;
+        return Task.CompletedTask;
+    });
