@@ -1,0 +1,28 @@
+﻿{
+  "version": "1.0.0-*",
+
+  "dependencies": {
+    "NETStandard.Library": "1.6.0",
+    "ZooKeeperNetEx": "3.4.8.5"
+  },
+
+  "frameworks": {
+    "netstandard1.6": {
+      "imports": "dnxcore50"
+    },
+    "net40": {
+      "buildOptions": {
+        "define": [
+          "NET"
+        ]
+      }
+    },
+    "net45": {
+      "buildOptions": {
+        "define": [
+          "NET"
+        ]
+      }
+    }
+  }
+}
