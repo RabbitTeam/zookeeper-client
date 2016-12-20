@@ -24,13 +24,15 @@
                 SessionPasswd = null //default value
             });
 ### 创建节点
-    await client.CreateEphemeralAsync("/year", Encoding.UTF8.GetBytes("2016"));
-    await client.CreateEphemeralAsync("/year", Encoding.UTF8.GetBytes("2016"), ZooDefs.Ids.OPEN_ACL_UNSAFE);
+    var data = Encoding.UTF8.GetBytes("2016");
+    
+    await client.CreateEphemeralAsync("/year", data);
+    await client.CreateEphemeralAsync("/year", data, ZooDefs.Ids.OPEN_ACL_UNSAFE);
 
-    await client.CreatePersistentAsync("/year", Encoding.UTF8.GetBytes("2016"));
-    await client.CreatePersistentAsync("/year", Encoding.UTF8.GetBytes("2016"), ZooDefs.Ids.OPEN_ACL_UNSAFE);
+    await client.CreatePersistentAsync("/year", data);
+    await client.CreatePersistentAsync("/year", data, ZooDefs.Ids.OPEN_ACL_UNSAFE);
 
-    await client.CreateAsync("/year", Encoding.UTF8.GetBytes("2016"), ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT_SEQUENTIAL);
+    await client.CreateAsync("/year", data, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT_SEQUENTIAL);
     
     //递归创建
     await client.CreateRecursiveAsync("/microsoft/netcore/aspnet", Encoding.UTF8.GetBytes("1.0.0"), CreateMode.PERSISTENT);
