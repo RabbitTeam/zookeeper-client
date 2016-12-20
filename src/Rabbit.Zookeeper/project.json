@@ -18,12 +18,14 @@
   },
 
   "dependencies": {
-    "NETStandard.Library": "1.6.0",
     "ZooKeeperNetEx": "3.4.9.2"
   },
   "frameworks": {
     "netstandard1.6": {
-      "imports": "dnxcore50"
+      "imports": "dnxcore50",
+      "dependencies": {
+        "NETStandard.Library": "1.6.0"
+      }
     },
     "net40": {
       "buildOptions": {
