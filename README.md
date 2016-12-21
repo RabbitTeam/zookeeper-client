@@ -38,7 +38,7 @@
     await client.CreateAsync("/year", data, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT_SEQUENTIAL);
     
     //递归创建
-    await client.CreateRecursiveAsync("/microsoft/netcore/aspnet", Encoding.UTF8.GetBytes("1.0.0"), CreateMode.PERSISTENT);
+    await client.CreateRecursiveAsync("/microsoft/netcore/aspnet", data, CreateMode.PERSISTENT);
 ### 获取节点数据
     IEnumerable<byte> data = await client.GetDataAsync("/year");
     Encoding.UTF8.GetString(data.ToArray());
