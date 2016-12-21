@@ -12,7 +12,7 @@
 ## 使用说明
 ### 创建连接
 
-    var client = new ZookeeperClient(new ZookeeperClientOptions
+    IZookeeperClient client = new ZookeeperClient(new ZookeeperClientOptions
             {
                 ConnectionString = "172.18.20.132:2181",
                 BasePath = "/", //default value
@@ -26,18 +26,21 @@
 ### 创建节点
     var data = Encoding.UTF8.GetBytes("2016");
     
+    //快速创建临时节点
     await client.CreateEphemeralAsync("/year", data);
     await client.CreateEphemeralAsync("/year", data, ZooDefs.Ids.OPEN_ACL_UNSAFE);
-
+    
+    //快速创建永久节点
     await client.CreatePersistentAsync("/year", data);
     await client.CreatePersistentAsync("/year", data, ZooDefs.Ids.OPEN_ACL_UNSAFE);
-
+    
+    //完整调用
     await client.CreateAsync("/year", data, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT_SEQUENTIAL);
     
     //递归创建
     await client.CreateRecursiveAsync("/microsoft/netcore/aspnet", Encoding.UTF8.GetBytes("1.0.0"), CreateMode.PERSISTENT);
 ### 获取节点数据
-    var data = await client.GetDataAsync("/year");
+    IEnumerable<byte> data = await client.GetDataAsync("/year");
     Encoding.UTF8.GetString(data.ToArray());
 ### 获取子节点
     IEnumerable<string> children= await client.GetChildrenAsync("/microsoft");
