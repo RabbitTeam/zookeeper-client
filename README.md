@@ -66,3 +66,27 @@
         Watcher.Event.EventType eventType = args.Type;
         return Task.CompletedTask;
     });
+## FAQ
+### 什么时候会触发 "SubscribeDataChange" 事件 ?
+在以下情况下会触发通过 "SubscribeDataChange" 方法订阅的事件：
+
+1. 节点被创建
+2. 节点被删除
+3. 节点数据发生改变
+4. zk连接重连成功
+
+### 什么时候会触发 "SubscribeChildrenChange" 事件 ?
+在以下情况下会触发通过 "SubscribeChildrenChange" 方法订阅的事件：
+
+1. 节点被创建
+2. 节点被删除
+3. 节点子节点发生改变
+4. zk连接重连成功
+
+### 如何在 "xxxxChange" 事件中区分节点的状态 ?
+在事件触发参数会有个类型为 "EventType" 的属性 "Type"，通过该属性可以清楚的区分出节点变更的原因。
+
+### 为什么要写这个程序，它与 "ZooKeeperEx" 有什么区别 ?
+官方提供的组件，只提供了基本的api，在正常的zk使用情景中需要做非常复杂的事情，滋生出很多额外的代码并且不能保证其执行的正确性。
+
+在java语言中也有对官方zk进行封装的包 ZKClient，当前组件也是参考了这个项目。具体组件包提供了什么功能请参考 "提供的功能" 这一节。
