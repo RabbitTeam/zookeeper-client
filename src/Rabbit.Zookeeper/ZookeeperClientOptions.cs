@@ -18,6 +18,7 @@ namespace Rabbit.Zookeeper
         /// <see cref="SessionId"/> 为0。
         /// <see cref="SessionPasswd"/> 为null。
         /// <see cref="BasePath"/> 为null。
+        /// <see cref="EnableEphemeralNodeRestore"/> 为true。
         /// </remarks>
         public ZookeeperClientOptions()
         {
@@ -27,6 +28,7 @@ namespace Rabbit.Zookeeper
             ReadOnly = false;
             SessionId = 0;
             SessionPasswd = null;
+            EnableEphemeralNodeRestore = true;
         }
 
         /// <summary>
@@ -42,6 +44,7 @@ namespace Rabbit.Zookeeper
         /// <see cref="SessionId"/> 为0。
         /// <see cref="SessionPasswd"/> 为null。
         /// <see cref="BasePath"/> 为null。
+        /// <see cref="EnableEphemeralNodeRestore"/> 为true。
         /// </remarks>
         public ZookeeperClientOptions(string connectionString) : this()
         {
@@ -90,5 +93,10 @@ namespace Rabbit.Zookeeper
         /// 基础路径，会在所有的zk操作节点路径上加入此基础路径。
         /// </summary>
         public string BasePath { get; set; }
+
+        /// <summary>
+        /// 是否启用短暂类型节点的恢复。
+        /// </summary>
+        public bool EnableEphemeralNodeRestore { get; set; }
     }
 }

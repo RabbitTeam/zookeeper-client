@@ -23,6 +23,11 @@ namespace Rabbit.Zookeeper.Implementation
         /// </summary>
         private NodeChildrenChangeHandler _childrenChangeHandler;
 
+        /// <summary>
+        /// 节点的快照。
+        /// </summary>
+        private NodeSnapshot _localSnapshot = default(NodeSnapshot);
+
         #endregion Field
 
         #region Property
@@ -48,6 +53,8 @@ namespace Rabbit.Zookeeper.Implementation
             var zookeeper = _client.ZooKeeper;
             var data = await zookeeper.getDataAsync(Path, watch);
 
+            _localSnapshot.SetData(data?.Data);
+
             return data?.Data;
         }
 
@@ -55,6 +62,8 @@ namespace Rabbit.Zookeeper.Implementation
         {
             var zookeeper = _client.ZooKeeper;
             var data = await zookeeper.getChildrenAsync(Path, watch);
+
+            _localSnapshot.SetChildrens(data?.Children);
 
             return data?.Children;
         }
@@ -64,25 +73,39 @@ namespace Rabbit.Zookeeper.Implementation
             var zookeeper = _client.ZooKeeper;
             var data = await zookeeper.existsAsync(Path, watch);
 
-            return data != null;
+            var exists = data != null;
+
+            _localSnapshot.SetExists(exists);
+
+            return exists;
         }
 
         public async Task<string> CreateAsync(byte[] data, List<ACL> acls, CreateMode createMode)
         {
             var zooKeeper = _client.ZooKeeper;
-            return await zooKeeper.createAsync(Path, data, acls, createMode);
+            var path = await zooKeeper.createAsync(Path, data, acls, createMode);
+
+            _localSnapshot.Create(createMode, data, acls);
+
+            return path;
         }
 
         public Task<Stat> SetDataAsync(byte[] data, int version = -1)
         {
             var zooKeeper = _client.ZooKeeper;
-            return zooKeeper.setDataAsync(Path, data, version);
+            var stat = zooKeeper.setDataAsync(Path, data, version);
+
+            _localSnapshot.Update(data, version);
+
+            return stat;
         }
 
-        public Task DeleteAsync(int version = -1)
+        public async Task DeleteAsync(int version = -1)
         {
             var zookeeper = _client.ZooKeeper;
-            return zookeeper.deleteAsync(Path, version);
+            await zookeeper.deleteAsync(Path, version);
+
+            _localSnapshot.Delete();
         }
 
         #region Listener
@@ -175,6 +198,26 @@ namespace Rabbit.Zookeeper.Implementation
         /// </summary>
         private bool HasChildrenChangeHandler => HasHandler(_childrenChangeHandler);
 
+        /// <summary>
+        /// 状态变更处理。
+        /// </summary>
+        /// <param name="watchedEvent"></param>
+        /// <param name="isFirstConnection">是否是zk第一次连接上服务器。</param>
+        private async Task OnStatusChangeHandle(WatchedEvent watchedEvent, bool isFirstConnection)
+        {
+            //第一次连接zk不进行通知
+            if (isFirstConnection)
+                return;
+
+            //尝试恢复节点
+            await RestoreEphemeral();
+
+            if (HasDataChangeHandler)
+                await OnDataChangeHandle(watchedEvent);
+            if (HasChildrenChangeHandler)
+                await OnChildrenChangeHandle(watchedEvent);
+        }
+
         private async Task OnDataChangeHandle(WatchedEvent watchedEvent)
         {
             if (!HasDataChangeHandler)
@@ -220,23 +263,6 @@ namespace Rabbit.Zookeeper.Implementation
             await WatchDataChange();
         }
 
-        /// <summary>
-        /// 状态变更处理。
-        /// </summary>
-        /// <param name="watchedEvent"></param>
-        /// <param name="isFirstConnection">是否是zk第一次连接上服务器。</param>
-        private async Task OnStatusChangeHandle(WatchedEvent watchedEvent, bool isFirstConnection)
-        {
-            //第一次连接zk不进行通知
-            if (isFirstConnection)
-                return;
-
-            if (HasDataChangeHandler)
-                await OnDataChangeHandle(watchedEvent);
-            if (HasChildrenChangeHandler)
-                await OnChildrenChangeHandle(watchedEvent);
-        }
-
         private async Task OnChildrenChangeHandle(WatchedEvent watchedEvent)
         {
             if (!HasChildrenChangeHandler)
@@ -261,7 +287,8 @@ namespace Rabbit.Zookeeper.Implementation
             switch (watchedEvent.get_Type())
             {
                 case Watcher.Event.EventType.NodeCreated:
-                    args = new NodeChildrenChangeArgs(Path, Watcher.Event.EventType.NodeCreated, await getCurrentChildrens());
+                    args = new NodeChildrenChangeArgs(Path, Watcher.Event.EventType.NodeCreated,
+                        await getCurrentChildrens());
                     break;
 
                 case Watcher.Event.EventType.NodeDeleted:
@@ -269,8 +296,9 @@ namespace Rabbit.Zookeeper.Implementation
                     break;
 
                 case Watcher.Event.EventType.NodeChildrenChanged:
-                case Watcher.Event.EventType.None://重连时触发
-                    args = new NodeChildrenChangeArgs(Path, Watcher.Event.EventType.NodeChildrenChanged, await getCurrentChildrens());
+                case Watcher.Event.EventType.None: //重连时触发
+                    args = new NodeChildrenChangeArgs(Path, Watcher.Event.EventType.NodeChildrenChanged,
+                        await getCurrentChildrens());
                     break;
 
                 default:
@@ -309,6 +337,103 @@ namespace Rabbit.Zookeeper.Implementation
             return multicast != null && multicast.GetInvocationList().Any();
         }
 
+        private async Task RestoreEphemeral()
+        {
+            //没有开启恢复
+            if (!_client.Options.EnableEphemeralNodeRestore)
+                return;
+
+            //节点不存在
+            if (!_localSnapshot.IsExist)
+                return;
+
+            //不是短暂的节点
+            if (_localSnapshot.Mode != CreateMode.EPHEMERAL && _localSnapshot.Mode != CreateMode.EPHEMERAL_SEQUENTIAL)
+                return;
+
+            try
+            {
+                await _client.RetryUntilConnected(async () =>
+                {
+                    try
+                    {
+                        return await CreateAsync(_localSnapshot.Data?.ToArray(), _localSnapshot.Acls, _localSnapshot.Mode);
+                    }
+                    catch (KeeperException.NodeExistsException) //节点已经存在则忽略
+                    {
+                        return Path;
+                    }
+                });
+            }
+            catch (Exception exception)
+            {
+                Console.WriteLine($"恢复节点失败，异常：{exception.Message}");
+            }
+        }
+
         #endregion Private Method
+
+        #region Help Type
+
+        public struct NodeSnapshot
+        {
+            public bool IsExist { get; set; }
+            public CreateMode Mode { get; set; }
+            public IEnumerable<byte> Data { get; set; }
+            public int? Version { get; set; }
+            public List<ACL> Acls { get; set; }
+            public IEnumerable<string> Childrens { get; set; }
+
+            public void Create(CreateMode mode, byte[] data, List<ACL> acls)
+            {
+                IsExist = true;
+                Mode = mode;
+                Data = data;
+                Version = -1;
+                Acls = acls;
+                Childrens = null;
+            }
+
+            public void Update(IEnumerable<byte> data, int version)
+            {
+                IsExist = true;
+                Data = data;
+                Version = version;
+            }
+
+            public void Delete()
+            {
+                IsExist = false;
+                Mode = null;
+                Data = null;
+                Version = null;
+                Acls = null;
+                Childrens = null;
+            }
+
+            public void SetData(IEnumerable<byte> data)
+            {
+                IsExist = true;
+                Data = data;
+            }
+
+            public void SetChildrens(IEnumerable<string> childrens)
+            {
+                IsExist = true;
+                Childrens = childrens;
+            }
+
+            public void SetExists(bool exists)
+            {
+                if (!exists)
+                {
+                    Delete();
+                    return;
+                }
+                IsExist = true;
+            }
+        }
+
+        #endregion Help Type
     }
 }
