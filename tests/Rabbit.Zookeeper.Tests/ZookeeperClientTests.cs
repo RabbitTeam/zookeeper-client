@@ -17,9 +17,8 @@ namespace Rabbit.Zookeeper.Tests
         public ZookeeperClientTests()
         {
             Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
-            _client = new ZookeeperClient(new ZookeeperClientOptions
+            _client = new ZookeeperClient(new ZookeeperClientOptions("172.18.20.132:2181")
             {
-                ConnectionString = "172.18.20.132:2181",
                 SessionTimeout = TimeSpan.FromSeconds(20),
                 OperatingTimeout = TimeSpan.FromSeconds(30)
             });
@@ -243,7 +242,7 @@ namespace Rabbit.Zookeeper.Tests
             if (await _client.ExistsAsync(pathRoot))
                 await _client.DeleteRecursiveAsync(pathRoot);
 
-            await _client.CreateRecursiveAsync(path, null, CreateMode.PERSISTENT);
+            await _client.CreateRecursiveAsync(path, null);
             Assert.True(await _client.ExistsAsync(path));
 
             await _client.DeleteRecursiveAsync(pathRoot);

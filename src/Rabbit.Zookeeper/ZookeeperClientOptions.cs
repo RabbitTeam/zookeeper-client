@@ -2,8 +2,23 @@
 
 namespace Rabbit.Zookeeper
 {
+    /// <summary>
+    /// ZooKeeper客户端选项。
+    /// </summary>
     public class ZookeeperClientOptions
     {
+        /// <summary>
+        /// 创建一个新的ZooKeeper客户端选项。
+        /// </summary>
+        /// <remarks>
+        /// <see cref="ConnectionTimeout"/> 为10秒。
+        /// <see cref="SessionTimeout"/> 为20秒。
+        /// <see cref="OperatingTimeout"/> 为60秒。
+        /// <see cref="ReadOnly"/> 为false。
+        /// <see cref="SessionId"/> 为0。
+        /// <see cref="SessionPasswd"/> 为null。
+        /// <see cref="BasePath"/> 为null。
+        /// </remarks>
         public ZookeeperClientOptions()
         {
             ConnectionTimeout = TimeSpan.FromSeconds(10);
@@ -15,17 +30,39 @@ namespace Rabbit.Zookeeper
         }
 
         /// <summary>
+        /// 创建一个新的ZooKeeper客户端选项。
+        /// </summary>
+        /// <param name="connectionString">连接字符串。</param>
+        /// <exception cref="ArgumentNullException"><paramref name="connectionString"/> 为空。</exception>
+        /// <remarks>
+        /// <see cref="ConnectionTimeout"/> 为10秒。
+        /// <see cref="SessionTimeout"/> 为20秒。
+        /// <see cref="OperatingTimeout"/> 为60秒。
+        /// <see cref="ReadOnly"/> 为false。
+        /// <see cref="SessionId"/> 为0。
+        /// <see cref="SessionPasswd"/> 为null。
+        /// <see cref="BasePath"/> 为null。
+        /// </remarks>
+        public ZookeeperClientOptions(string connectionString) : this()
+        {
+            if (string.IsNullOrEmpty(connectionString))
+                throw new ArgumentNullException(nameof(connectionString));
+
+            ConnectionString = connectionString;
+        }
+
+        /// <summary>
         /// 连接字符串。
         /// </summary>
         public string ConnectionString { get; set; }
 
         /// <summary>
-        /// 等待zookeeper连接的时间。
+        /// 等待ZooKeeper连接的时间。
         /// </summary>
         public TimeSpan ConnectionTimeout { get; set; }
 
         /// <summary>
-        /// 执行zookeeper操作的重试等待时间。
+        /// 执行ZooKeeper操作的重试等待时间。
         /// </summary>
         public TimeSpan OperatingTimeout { get; set; }
 

@@ -67,10 +67,10 @@ namespace Rabbit.Zookeeper.Implementation
             return data != null;
         }
 
-        public async Task CreateAsync(byte[] data, List<ACL> acls, CreateMode createMode)
+        public async Task<string> CreateAsync(byte[] data, List<ACL> acls, CreateMode createMode)
         {
             var zooKeeper = _client.ZooKeeper;
-            await zooKeeper.createAsync(Path, data, acls, createMode);
+            return await zooKeeper.createAsync(Path, data, acls, createMode);
         }
 
         public Task<Stat> SetDataAsync(byte[] data, int version = -1)

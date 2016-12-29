@@ -14,6 +14,9 @@ using TaskEx = System.Threading.Tasks.Task;
 
 namespace Rabbit.Zookeeper.Implementation
 {
+    /// <summary>
+    /// ZooKeeper客户端。
+    /// </summary>
     public class ZookeeperClient : Watcher, IZookeeperClient
     {
         #region Field
@@ -32,23 +35,22 @@ namespace Rabbit.Zookeeper.Implementation
 
         #endregion Field
 
-        #region Event
-
-        public event ConnectionStateChangeHandler ConnectionStateChange
-        {
-            add { _connectionStateChangeHandler += value; }
-            remove { _connectionStateChangeHandler -= value; }
-        }
-
-        #endregion Event
-
         #region Constructor
 
+        /// <summary>
+        /// 创建一个新的ZooKeeper客户端。
+        /// </summary>
+        /// <param name="connectionString">连接字符串。</param>
+        /// <exception cref="ArgumentNullException"><paramref name="connectionString"/> 为空。</exception>
         public ZookeeperClient(string connectionString)
-            : this(new ZookeeperClientOptions { ConnectionString = connectionString })
+            : this(new ZookeeperClientOptions(connectionString))
         {
         }
 
+        /// <summary>
+        /// 创建一个新的ZooKeeper客户端。
+        /// </summary>
+        /// <param name="options">客户端选项。</param>
         public ZookeeperClient(ZookeeperClientOptions options)
         {
             Options = options;
@@ -60,7 +62,7 @@ namespace Rabbit.Zookeeper.Implementation
         #region Public Method
 
         /// <summary>
-        /// 具体的zookeeper连接。
+        /// 具体的ZooKeeper连接。
         /// </summary>
         public ZooKeeper ZooKeeper { get; private set; }
 
@@ -130,6 +132,11 @@ namespace Rabbit.Zookeeper.Implementation
             }
         }
 
+        /// <summary>
+        /// 获取指定节点的数据。
+        /// </summary>
+        /// <param name="path">节点路径。</param>
+        /// <returns>节点数据。</returns>
         public async Task<IEnumerable<byte>> GetDataAsync(string path)
         {
             path = GetZooKeeperPath(path);
@@ -138,6 +145,11 @@ namespace Rabbit.Zookeeper.Implementation
             return await RetryUntilConnected(async () => await nodeEntry.GetDataAsync());
         }
 
+        /// <summary>
+        /// 获取指定节点下的所有子节点。
+        /// </summary>
+        /// <param name="path">节点路径。</param>
+        /// <returns>子节点集合。</returns>
         public async Task<IEnumerable<string>> GetChildrenAsync(string path)
         {
             path = GetZooKeeperPath(path);
@@ -146,6 +158,11 @@ namespace Rabbit.Zookeeper.Implementation
             return await RetryUntilConnected(async () => await nodeEntry.GetChildrenAsync());
         }
 
+        /// <summary>
+        /// 判断节点是否存在。
+        /// </summary>
+        /// <param name="path">节点路径。</param>
+        /// <returns>如果存在则返回true，否则返回false。</returns>
         public async Task<bool> ExistsAsync(string path)
         {
             path = GetZooKeeperPath(path);
@@ -154,18 +171,32 @@ namespace Rabbit.Zookeeper.Implementation
             return await RetryUntilConnected(async () => await nodeEntry.ExistsAsync());
         }
 
-        public async Task CreateAsync(string path, byte[] data, List<ACL> acls, CreateMode createMode)
+        /// <summary>
+        /// 创建节点。
+        /// </summary>
+        /// <param name="path">节点路径。</param>
+        /// <param name="data">节点数据。</param>
+        /// <param name="acls">权限。</param>
+        /// <param name="createMode">创建模式。</param>
+        /// <returns>节点路径。</returns>
+        /// <remarks>
+        /// 因为使用序列方式创建节点zk会修改节点name，所以需要返回真正的节点路径。
+        /// </remarks>
+        public async Task<string> CreateAsync(string path, byte[] data, List<ACL> acls, CreateMode createMode)
         {
             path = GetZooKeeperPath(path);
 
             var nodeEntry = GetOrAddNodeEntry(path);
-            await RetryUntilConnected(async () =>
-            {
-                await nodeEntry.CreateAsync(data, acls, createMode);
-                return 0;
-            });
+            return await RetryUntilConnected(async () => await nodeEntry.CreateAsync(data, acls, createMode));
         }
 
+        /// <summary>
+        /// 设置节点数据。
+        /// </summary>
+        /// <param name="path">节点路径。</param>
+        /// <param name="data">节点数据。</param>
+        /// <param name="version">版本号。</param>
+        /// <returns>节点状态。</returns>
         public async Task<Stat> SetDataAsync(string path, byte[] data, int version = -1)
         {
             path = GetZooKeeperPath(path);
@@ -174,6 +205,11 @@ namespace Rabbit.Zookeeper.Implementation
             return await RetryUntilConnected(async () => await nodeEntry.SetDataAsync(data, version));
         }
 
+        /// <summary>
+        /// 删除节点。
+        /// </summary>
+        /// <param name="path">节点路径。</param>
+        /// <param name="version">版本号。</param>
         public async Task DeleteAsync(string path, int version = -1)
         {
             path = GetZooKeeperPath(path);
@@ -186,6 +222,11 @@ namespace Rabbit.Zookeeper.Implementation
             });
         }
 
+        /// <summary>
+        /// 订阅节点数据变更。
+        /// </summary>
+        /// <param name="path">节点路径。</param>
+        /// <param name="listener">监听者。</param>
         public async Task SubscribeDataChange(string path, NodeDataChangeHandler listener)
         {
             path = GetZooKeeperPath(path);
@@ -194,6 +235,11 @@ namespace Rabbit.Zookeeper.Implementation
             await node.SubscribeDataChange(listener);
         }
 
+        /// <summary>
+        /// 取消订阅节点数据变更。
+        /// </summary>
+        /// <param name="path">节点路径。</param>
+        /// <param name="listener">监听者。</param>
         public void UnSubscribeDataChange(string path, NodeDataChangeHandler listener)
         {
             path = GetZooKeeperPath(path);
@@ -202,16 +248,29 @@ namespace Rabbit.Zookeeper.Implementation
             node.UnSubscribeDataChange(listener);
         }
 
+        /// <summary>
+        /// 订阅连接状态变更。
+        /// </summary>
+        /// <param name="listener">监听者。</param>
         public void SubscribeStatusChange(ConnectionStateChangeHandler listener)
         {
-            ConnectionStateChange += listener;
+            _connectionStateChangeHandler += listener;
         }
 
+        /// <summary>
+        /// 取消订阅连接状态变更。
+        /// </summary>
+        /// <param name="listener">监听者。</param>
         public void UnSubscribeStatusChange(ConnectionStateChangeHandler listener)
         {
-            ConnectionStateChange -= listener;
+            _connectionStateChangeHandler -= listener;
         }
 
+        /// <summary>
+        /// 订阅节点子节点变更。
+        /// </summary>
+        /// <param name="path">节点路径。</param>
+        /// <param name="listener">监听者。</param>
         public async Task<IEnumerable<string>> SubscribeChildrenChange(string path, NodeChildrenChangeHandler listener)
         {
             path = GetZooKeeperPath(path);
@@ -220,6 +279,11 @@ namespace Rabbit.Zookeeper.Implementation
             return await node.SubscribeChildrenChange(listener);
         }
 
+        /// <summary>
+        /// 取消订阅节点子节点变更。
+        /// </summary>
+        /// <param name="path">节点路径。</param>
+        /// <param name="listener">监听者。</param>
         public void UnSubscribeChildrenChange(string path, NodeChildrenChangeHandler listener)
         {
             path = GetZooKeeperPath(path);
@@ -340,6 +404,7 @@ namespace Rabbit.Zookeeper.Implementation
                     }
                     catch
                     {
+                        // ignored
                     }
                 }
                 ZooKeeper = CreateZooKeeper();
