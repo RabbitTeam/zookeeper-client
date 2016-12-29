@@ -14,7 +14,8 @@
     "repository": {
       "type": "git",
       "url": "https://github.com/RabbitTeam/zookeeper-client"
-    }
+    },
+    "releaseNotes": "1.优化接口的调用\n2.支持短暂类型节点的恢复"
   },
 
   "dependencies": {
