@@ -12,9 +12,8 @@
 ## 使用说明
 ### 创建连接
 
-    IZookeeperClient client = new ZookeeperClient(new ZookeeperClientOptions
+    IZookeeperClient client = new ZookeeperClient(new ZookeeperClientOptions("172.18.20.132:2181")
             {
-                ConnectionString = "172.18.20.132:2181",
                 BasePath = "/", //default value
                 ConnectionTimeout = TimeSpan.FromSeconds(10), //default value
                 SessionTimeout = TimeSpan.FromSeconds(20), //default value
@@ -22,6 +21,7 @@
                 ReadOnly = false, //default value
                 SessionId = 0, //default value
                 SessionPasswd = null //default value
+                EnableEphemeralNodeRestore = true //default value
             });
 ### 创建节点
     var data = Encoding.UTF8.GetBytes("2016");
@@ -38,7 +38,7 @@
     await client.CreateAsync("/year", data, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT_SEQUENTIAL);
     
     //递归创建
-    await client.CreateRecursiveAsync("/microsoft/netcore/aspnet", data, CreateMode.PERSISTENT);
+    await client.CreateRecursiveAsync("/microsoft/netcore/aspnet", data);
 ### 获取节点数据
     IEnumerable<byte> data = await client.GetDataAsync("/year");
     Encoding.UTF8.GetString(data.ToArray());
